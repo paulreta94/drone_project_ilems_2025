@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import plotly.express as px
-
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from functions import rectangular_pulse
 # Constants
 SoB0 = 10**(5/10)
 Pe = 10**((11-30)/10)
@@ -42,7 +44,7 @@ deltaD = c / (2 * B)
 
 # Load data
 # df = pd.read_json("data.json", lines=True)
-df=pd.read_json("Test1_5m.json",lines=True)
+df=pd.read_json(os.path.dirname(os.path.abspath(__file__))+"/Test1_5m.json",lines=True)
 I = np.array(df["I"].dropna().tolist())
 Q = np.array(df["Q"].dropna().tolist())
 buffer_size = np.size(I[0])
@@ -70,22 +72,27 @@ S = np.conj(I + 1j * Q)
 
 # Apply Hanning window
 S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
+# S = np.multiply(np.tile(np.hanning(len(I[0])), (1, 1)), S)
 
 # Compute the inverse FT of S to get a time spectrum
 s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
+s_filtered=np.zeros_like(s)
 
 # Calculate distance array
 d = deltaD * (-buffer_size / 2 + np.arange(buffer_size))
+for i in range(np.shape(s)[0]):
+    sig_couplage = np.multiply(s[i],rectangular_pulse(d,-3,3))
+    s_filtered[i]=np.copy(s[i]-sig_couplage)
 
 # Create the waterfall plot
 fig = px.imshow(
-    np.abs(s.T),
+    np.abs(s_filtered.T),
     aspect="auto",
     y=d,
     zmin=0.01,
     zmax=0.15,
     labels=dict(x="Sample number", y="Distance", color="Amplitude"),
-    title="Waterfall Plot of Signal Amplitude"
+    title="Waterfall Plot of Filtered Signal Amplitude"
 )
 
 # Set the y-axis range

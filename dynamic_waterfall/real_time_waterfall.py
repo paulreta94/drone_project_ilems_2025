@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 from dash import Dash, dcc, html, Input, Output, callback
 import plotly
-import plotly.figure_factory as ff
+import os
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # Constants
@@ -47,12 +47,7 @@ D = ((Pe * Ge * Gr * lambda_val**2 * FFe**2 * RCS) /
 
 # Range resolution
 deltaD = c / (2 * B)
-
-# # Load data
-df=pd.read_json("data.json",lines=True)
-I = np.array(df["I"].dropna().tolist())
-Q = np.array(df["Q"].dropna().tolist())
-buffer_size = np.shape(I)[1]
+buffer_size=512 # WARNING : TO BE CHANGED IF YOUR FRAMES ARE 128-LONG 
 
 # # Velocity resolution
 Fs = 320e3
@@ -62,84 +57,49 @@ deltaV = lambda_val / (2 * Ti)
 # # Maximum velocity
 vmax = buffer_size * deltaV / 2
 
-# # Normalization
-nbit = 2**12
-I = I - nbit / 2
-Q = Q - nbit / 2
-I = I / (nbit / 2)
-Q = Q / (nbit / 2)
 
 # Calculate amplitude
 amplitude = np.linspace(-1, 1, num=2**12)
-
-# Calculate S
-S = np.conj(I + 1j * Q)
-
-# Apply Hanning window
-S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
-
-# Compute the inverse FT of S to get a time spectrum
-s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
-
-# Calculate distance array
-d = deltaD * (-buffer_size / 2 + np.arange(buffer_size))
-sig_couplage = np.multiply(s,rectangular_pulse(d,-3,3))
-s_filtered=np.copy(s-sig_couplage)
-# Create the waterfall plot
-# fig = px.imshow(
-#     np.abs(s_filtered.T),
-#     aspect="auto",
-#     y=d,
-#     zmin=0.01,
-#     zmax=0.15,
-#     labels=dict(x="Sample number", y="Distance", color="Amplitude"),
-#     title="Waterfall Plot of Signal Amplitude"
-# )
-
-
-
-# # Set the y-axis range
-# fig.update_yaxes(range=[-10, 30], autorange=False)
-
-# # Show the figure
-# fig.show()
 
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = html.Div(
     html.Div([
         html.H4('Radar OPS243 computations'),
-        html.Div(id='live-update-text'),
+        # html.Div(id='live-update-text'),
         dcc.Graph(id='live-update-graph'),
         dcc.Interval(
             id='interval-component',
-            interval=1*1000, # in milliseconds
+            interval=3*500, # in milliseconds
             n_intervals=0
         )
     ])
 )
 
-
-@callback(Output('live-update-text', 'children'),
-              Input('interval-component', 'n_intervals'))
-def update_metrics(n):
-    # lon, lat, alt = satellite.get_lonlatalt(datetime.datetime.now())
-    dist = d[np.argmax(np.abs(s_filtered))]
-    style = {'padding': '5px', 'fontSize': '16px'}
-    return [
-        html.Span('Target distance: {0:.2f} meters'.format(dist), style=style),
-        html.Span(f'Updated data at: {datetime.datetime.now()}', style=style),
-        # html.Span('Altitude: {0:0.2f}'.format(alt), style=style)
-    ]
-
-
 # Multiple components can update everytime interval gets fired.
 @callback(Output('live-update-graph', 'figure'),
               Input('interval-component', 'n_intervals'))
 def update_graph_live(n):
-    df=pd.read_json("data.json",lines=True)
+    flag_I = False
+    flag_Q = False
+    while(True):
+        df=pd.read_json(os.path.dirname(os.path.abspath(__file__))
++"/data.json",lines=True,encoding_errors='ignore')
+        try:
+            I = np.array(df["I"].dropna().tolist()) # checking that there is indeed an I frame
+            if(np.size(I)==512): # checking the I frame is not corrupted
+                flag_I=True
+        except KeyError:
+            pass
+        try:
+            Q = np.array(df["Q"].dropna().tolist())
+            if(np.size(Q)==512):
+                flag_Q=True
+        except KeyError:
+            pass
 
-    I = np.array(df["I"].dropna().tolist())
-    Q = np.array(df["Q"].dropna().tolist())
+        if (flag_I and flag_Q):
+            break
+
     buffer_size = np.size(I[0])
 
     # # Velocity resolution
@@ -164,7 +124,7 @@ def update_graph_live(n):
     S = np.conj(I + 1j * Q)
 
     # Apply Hanning window
-    S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
+    S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S) # (1,1)
 
     # Compute the inverse FT of S to get a time spectrum
     s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
