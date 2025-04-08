@@ -1,9 +1,10 @@
 import numpy as np
-import pandas as pd
-import plotly.express as px
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+import pandas as pd#type:ignore
+import plotly.express as px#type:ignore
+from plotly.subplots import make_subplots#type:ignore
+import plotly.graph_objects as go#type:ignore
 from functions import rectangular_pulse
+import os
 # Constants
 SoB0 = 10**(5/10)
 Pe = 10**((11-30)/10)
@@ -43,7 +44,6 @@ D = ((Pe * Ge * Gr * lambda_val**2 * FFe**2 * RCS) /
 deltaD = c / (2 * B)
 
 # Load data
-# df = pd.read_json("data.json", lines=True)
 df=pd.read_json(os.path.dirname(os.path.abspath(__file__))+"/Test1_5m.json",lines=True)
 I = np.array(df["I"].dropna().tolist())
 Q = np.array(df["Q"].dropna().tolist())
@@ -59,7 +59,7 @@ vmax = buffer_size * deltaV / 2
 
 # Normalization
 nbit = 2**12
-I = I - nbit / 2
+I = I - nbit / 2 
 Q = Q - nbit / 2
 I = I / (nbit / 2)
 Q = Q / (nbit / 2)
@@ -70,9 +70,8 @@ amplitude = np.linspace(-1, 1, num=2**12)
 # Calculate S
 S = np.conj(I + 1j * Q)
 
-# Apply Hanning window
+# Apply Hanning window (weighted cosine)
 S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
-# S = np.multiply(np.tile(np.hanning(len(I[0])), (1, 1)), S)
 
 # Compute the inverse FT of S to get a time spectrum
 s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
@@ -80,22 +79,6 @@ s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
 # Calculate distance array
 d = deltaD * (-buffer_size / 2 + np.arange(buffer_size))
 
-# Create the waterfall plot
-# fig = px.imshow(
-#     np.abs(s.T),
-#     aspect="auto",
-#     y=d,
-#     zmin=0.01,
-#     zmax=0.15,
-#     labels=dict(x="Sample number", y="Distance", color="Amplitude"),
-#     title="Waterfall Plot of Signal Amplitude"
-# )
-
-# # Set the y-axis range
-# fig.update_yaxes(range=[-10, 30], autorange=False)
-
-# Show the figure
-# fig.show()
 s_filtered=np.zeros_like(s)
 for i in range(np.shape(s)[0]):
     sig_couplage = np.multiply(s[i],rectangular_pulse(d,-3,3))
@@ -104,8 +87,6 @@ for i in range(np.shape(s)[0]):
 
 fig2=make_subplots(rows=1,cols=1)
 for i in range(np.shape(s)[0]):
-    # sig_couplage = np.multiply(s[i],rectangular_pulse(d,-3,3))
-    # s_filtered=np.copy(s-sig_couplage)
     fig2.add_trace(go.Scatter(x=d, y=np.abs(s_filtered[i])),
               row=1, col=1)
 fig2.update_xaxes(title_text="Distance (m)",range=[-10,30], autorange=False)

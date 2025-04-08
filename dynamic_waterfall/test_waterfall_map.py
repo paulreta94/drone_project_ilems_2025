@@ -1,8 +1,9 @@
 import numpy as np
-import pandas as pd
-import plotly.express as px
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+import pandas as pd#type:ignore
+import plotly.express as px#type:ignore
+from plotly.subplots import make_subplots#type:ignore
+import plotly.graph_objects as go#type:ignore
+import os
 from functions import rectangular_pulse
 # Constants
 SoB0 = 10**(5/10)
@@ -72,7 +73,6 @@ S = np.conj(I + 1j * Q)
 
 # Apply Hanning window
 S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
-# S = np.multiply(np.tile(np.hanning(len(I[0])), (1, 1)), S)
 
 # Compute the inverse FT of S to get a time spectrum
 s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)

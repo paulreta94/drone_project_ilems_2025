@@ -1,10 +1,10 @@
 import datetime
 import numpy as np
-import pandas as pd
-import dash
+import pandas as pd#type:ignore
+import dash#type:ignore
 from functions import rectangular_pulse
-import plotly.express as px
-import plotly.graph_objs as go
+import plotly.express as px#type:ignore
+import plotly.graph_objs as go#type:ignore
 from dash import Dash, dcc, html, Input, Output, callback
 import plotly
 import os
@@ -69,7 +69,7 @@ app.layout = html.Div(
         dcc.Graph(id='live-update-graph'),
         dcc.Interval(
             id='interval-component',
-            interval=3*500, # in milliseconds
+            interval=1*500, # in milliseconds
             n_intervals=0
         )
     ])

@@ -1,0 +1,80 @@
+[
+    {
+        "id": "d28040facacd0414",
+        "type": "tab",
+        "label": "Flux 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "8e9c2e6cf625b0b8",
+        "type": "mqtt in",
+        "z": "d28040facacd0414",
+        "name": "",
+        "topic": "#",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "676ce1f286454954",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 70,
+        "y": 300,
+        "wires": [
+            [
+                "66282ae4fcd06021"
+            ]
+        ]
+    },
+    {
+        "id": "66282ae4fcd06021",
+        "type": "file",
+        "z": "d28040facacd0414",
+        "name": "",
+        "filename": "C:/Users/peret/Documents/00_5A/mm6/red_team/dynamic_waterfall/data_bis.json",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "utf8",
+        "x": 530,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "676ce1f286454954",
+        "type": "mqtt-broker",
+        "name": "BobMQTT",
+        "broker": "ca59e5a2b08f429e98b843811e5a63e6.s1.eu.hivemq.cloud:8883",
+        "port": "8883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
