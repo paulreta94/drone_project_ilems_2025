@@ -1,7 +1,6 @@
 import datetime
 import numpy as np
 import pandas as pd#type:ignore
-import dash#type:ignore
 from functions import rectangular_pulse
 import plotly.express as px#type:ignore
 import plotly.graph_objs as go#type:ignore

@@ -3,8 +3,11 @@ import pandas as pd#type:ignore
 import plotly.express as px#type:ignore
 from plotly.subplots import make_subplots#type:ignore
 import plotly.graph_objects as go#type:ignore
+from dash import Dash, dcc, html, Input, Output, callback#type:ignore
 import os
 from functions import rectangular_pulse
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
 # Constants
 SoB0 = 10**(5/10)
 Pe = 10**((11-30)/10)
@@ -45,58 +48,78 @@ deltaD = c / (2 * B)
 
 # Load data
 # df = pd.read_json("data.json", lines=True)
-df=pd.read_json(os.path.dirname(os.path.abspath(__file__))+"/Test1_5m.json",lines=True)
-I = np.array(df["I"].dropna().tolist())
-Q = np.array(df["Q"].dropna().tolist())
-buffer_size = np.size(I[0])
+    
+app = Dash(__name__, external_stylesheets=external_stylesheets)
+app.layout = html.Div(
+    html.Div([
+        html.H4('Test waterfall'),
+        dcc.Graph(id='graph'),
+        dcc.Interval( # automatically updating graph every second
+            id='interval-component',
+            interval=1*1000, # in milliseconds
+            n_intervals=0
+        )
 
-# Velocity resolution
-Fs = 320e3
-Ti = buffer_size / Fs
-deltaV = lambda_val / (2 * Ti)
-
-# Maximum velocity
-vmax = buffer_size * deltaV / 2
-
-# Normalization
-nbit = 2**12
-I = I - nbit / 2
-Q = Q - nbit / 2
-I = I / (nbit / 2)
-Q = Q / (nbit / 2)
-
-# Calculate amplitude
-amplitude = np.linspace(-1, 1, num=2**12)
-
-# Calculate S
-S = np.conj(I + 1j * Q)
-
-# Apply Hanning window
-S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
-
-# Compute the inverse FT of S to get a time spectrum
-s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
-s_filtered=np.zeros_like(s)
-
-# Calculate distance array
-d = deltaD * (-buffer_size / 2 + np.arange(buffer_size))
-for i in range(np.shape(s)[0]):
-    sig_couplage = np.multiply(s[i],rectangular_pulse(d,-3,3))
-    s_filtered[i]=np.copy(s[i]-sig_couplage)
-
-# Create the waterfall plot
-fig = px.imshow(
-    np.abs(s_filtered.T),
-    aspect="auto",
-    y=d,
-    zmin=0.01,
-    zmax=0.15,
-    labels=dict(x="Sample number", y="Distance", color="Amplitude"),
-    title="Waterfall Plot of Filtered Signal Amplitude"
+    ])
 )
+@callback(Output('graph','figure'),Input('interval-component','n_intervals'))
+# Create the waterfall plot
+def update_waterfall(n):
+    df=pd.read_json(os.path.dirname(os.path.abspath(__file__))+"/Test1_5m.json",lines=True)
+    I = np.array(df["I"].dropna().tolist())
+    Q = np.array(df["Q"].dropna().tolist())
+    buffer_size = np.size(I[0])
 
-# Set the y-axis range
-fig.update_yaxes(range=[-10, 30], autorange=False)
+    # Velocity resolution
+    Fs = 320e3
+    Ti = buffer_size / Fs
+    deltaV = lambda_val / (2 * Ti)
 
-# Show the figure
-fig.show()
+    # Maximum velocity
+    vmax = buffer_size * deltaV / 2
+
+    # Normalization
+    nbit = 2**12
+    I = I - nbit / 2
+    Q = Q - nbit / 2
+    I = I / (nbit / 2)
+    Q = Q / (nbit / 2)
+
+    # Calculate amplitude
+    amplitude = np.linspace(-1, 1, num=2**12)
+
+    # Calculate S
+    S = np.conj(I + 1j * Q)
+
+    # Apply Hanning window
+    S = np.multiply(np.tile(np.hanning(len(I[0])), (len(I), 1)), S)
+
+    # Compute the inverse FT of S to get a time spectrum
+    s = np.fft.fftshift(np.fft.ifft(S, axis=1), axes=1)
+    s_filtered=np.zeros_like(s)
+
+    # Calculate distance array
+    d = deltaD * (-buffer_size / 2 + np.arange(buffer_size))
+    for i in range(np.shape(s)[0]):
+        sig_couplage = np.multiply(s[i],rectangular_pulse(d,-3,3))
+        s_filtered[i]=np.copy(s[i]-sig_couplage)
+
+    fig = go.Figure(px.imshow(
+        img=np.abs(s_filtered.T),
+        aspect="auto",
+        y=d,
+        zmin=0.01,
+        zmax=0.15,
+        labels=dict(x="Sample number", y="Distance", color="Amplitude"),
+        title="Waterfall Plot of Filtered Signal Amplitude"
+    ))
+
+    # Set the y-axis range
+    fig.update_yaxes(range=[-10, 30], autorange=False)
+
+    # Show the figure
+    # fig.show()
+    return fig
+
+if __name__ == '__main__':
+    app.run(debug=True)
